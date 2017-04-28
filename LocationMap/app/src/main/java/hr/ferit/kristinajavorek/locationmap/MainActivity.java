@@ -7,6 +7,8 @@ import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
+import android.media.AudioManager;
+import android.media.SoundPool;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
@@ -31,6 +33,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
@@ -44,6 +47,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     List<Address> addresses;
     LatLng latLng;
     TextView tvAddress;
+    SoundPool mSoundPool;
+    boolean mLoaded = false;
+    HashMap<Integer, Integer> mSoundMap = new HashMap<>();
     private GoogleMap.OnMapClickListener mCustomOnMapClickListener;
 
     @Override
@@ -51,6 +57,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         this.initialize();
+        this.loadSounds();
     }
 
     private void initialize() {
@@ -60,6 +67,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         this.mCustomOnMapClickListener = new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
+                playSound(R.raw.sound);
                 MarkerOptions newMarkerOptions = new MarkerOptions();
                 newMarkerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE));
                 newMarkerOptions.title("Hi!");
@@ -68,6 +76,27 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 mGoogleMap.addMarker(newMarkerOptions);
             }
         };
+    }
+
+    private void loadSounds(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            this.mSoundPool = new SoundPool.Builder().setMaxStreams(10).build();
+        }else{
+            this.mSoundPool = new SoundPool(10, AudioManager.STREAM_MUSIC,0);
+        }
+        this.mSoundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
+            @Override
+            public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
+                Log.d("Test",String.valueOf(sampleId));
+                mLoaded = true;
+            }
+        });
+        this.mSoundMap.put(R.raw.sound, this.mSoundPool.load(this, R.raw.sound,1));
+    }
+
+    void playSound(int selectedSound){
+        int soundID = this.mSoundMap.get(selectedSound);
+        this.mSoundPool.play(soundID, 1,1,1,0,1f);
     }
 
     @Override
@@ -178,7 +207,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (currLocationMarker != null) {
             currLocationMarker.remove();
         }
-        
+
         MarkerOptions newMarkerOptions = new MarkerOptions();
         newMarkerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
         newMarkerOptions.title("Here I am");
