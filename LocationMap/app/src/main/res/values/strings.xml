@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Location Map</string>
+    <string name="btn_text">Take a picture</string>
 </resources>

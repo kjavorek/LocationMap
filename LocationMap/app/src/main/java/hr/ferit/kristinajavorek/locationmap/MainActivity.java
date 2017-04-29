@@ -1,19 +1,35 @@
 package hr.ferit.kristinajavorek.locationmap;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.ContentResolver;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.media.AudioManager;
+import android.media.RingtoneManager;
 import android.media.SoundPool;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,12 +48,17 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
+    private static final int CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE = 0;
+    public static final String MSG_KEY = "message";
     GoogleMap mGoogleMap;
     MapFragment mMapFragment;
     LocationRequest mLocationRequest;
@@ -46,10 +67,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     Geocoder geocoder;
     List<Address> addresses;
     LatLng latLng;
+    String address;
     TextView tvAddress;
     SoundPool mSoundPool;
     boolean mLoaded = false;
     HashMap<Integer, Integer> mSoundMap = new HashMap<>();
+    Button btn;
+    File imagesFolder;
+    Uri uriSavedImage;
     private GoogleMap.OnMapClickListener mCustomOnMapClickListener;
 
     @Override
@@ -61,6 +86,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void initialize() {
+        this.btn= (Button) findViewById(R.id.btn);
         this.tvAddress = (TextView) findViewById(R.id.tvAddress);
         this.mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.fGoogleMap);
         this.mMapFragment.getMapAsync(this);
@@ -76,6 +102,26 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 mGoogleMap.addMarker(newMarkerOptions);
             }
         };
+        this.btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent imageIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+                imagesFolder = Environment.getExternalStoragePublicDirectory("/HereIAm/Images");
+                File image = new File(imagesFolder, address + ".png");
+                uriSavedImage = Uri.fromFile(image);
+                imageIntent.putExtra(MediaStore.EXTRA_OUTPUT, uriSavedImage);
+                startActivityForResult(imageIntent, CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE);
+            }
+        });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if(requestCode == CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE) {
+            if(resultCode == Activity.RESULT_OK) {
+                sendNotification();
+            }
+        }
     }
 
     private void loadSounds(){
@@ -87,7 +133,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         this.mSoundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
             @Override
             public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
-                Log.d("Test",String.valueOf(sampleId));
                 mLoaded = true;
             }
         });
@@ -194,7 +239,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             Double longitude = mLastLocation.getLongitude();
             try {
                 addresses = geocoder.getFromLocation(latitude, longitude, 1);
-                String address = addresses.get(0).getAddressLine(0);
+                address = addresses.get(0).getAddressLine(0);
                 String postalCode = addresses.get(0).getPostalCode();
                 String city = addresses.get(0).getLocality();
                 String country = addresses.get(0).getCountryName();
@@ -214,11 +259,36 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         newMarkerOptions.draggable(true);
         newMarkerOptions.position(latLng);
         mGoogleMap.addMarker(newMarkerOptions);
-        //Toast.makeText(this,"Location Changed",Toast.LENGTH_SHORT).show();
-        //zoom to current position:
-        //mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng,8));
     }
 
+    private void sendNotification() {
+        String msgText = "Click to see your picture";
+
+        Intent notificationIntent = new Intent(this,MainActivity.class);
+        notificationIntent.putExtra(MSG_KEY, msgText);
+        notificationIntent.setAction(Intent.ACTION_GET_CONTENT);
+        startActivity(notificationIntent);
+
+        Intent intent = new Intent();
+        //intent.setType("image/*");
+        intent.setDataAndType(uriSavedImage, "image/png");
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        PendingIntent notificationPendingIntent = PendingIntent.getActivity(this,0,intent,PendingIntent.FLAG_UPDATE_CURRENT);
+
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this);
+        notificationBuilder.setAutoCancel(true)
+                .setContentTitle("Picture successfully saved")
+                .setContentText(msgText)
+                .setSmallIcon(android.R.drawable.ic_dialog_email)
+                .setContentIntent(notificationPendingIntent)
+                .setLights(Color.BLUE, 2000, 1000)
+                .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
+        Notification notification = notificationBuilder.build();
+        NotificationManager notificationManager =(NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        notificationManager.notify(0,notification);
+        this.finish();
+
+    }
 
 }
 
