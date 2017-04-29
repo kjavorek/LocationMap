@@ -212,7 +212,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         }
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
-        Toast.makeText(this, "Location Changed", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -252,13 +251,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (currLocationMarker != null) {
             currLocationMarker.remove();
         }
-
-        MarkerOptions newMarkerOptions = new MarkerOptions();
-        newMarkerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
-        newMarkerOptions.title("Here I am");
-        newMarkerOptions.draggable(true);
-        newMarkerOptions.position(latLng);
-        mGoogleMap.addMarker(newMarkerOptions);
     }
 
     private void sendNotification() {

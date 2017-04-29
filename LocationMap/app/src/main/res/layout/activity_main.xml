@@ -2,11 +2,14 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/background">
     <Button
         android:id="@+id/btn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@color/btn_color"
+        android:textColor="@color/text_color"
         android:text="@string/btn_text"/>
     <TextView
         android:id="@+id/tvAddress"
@@ -14,7 +17,8 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/btn"
         android:layout_margin="7sp"
-        android:maxLines="5"/>
+        android:maxLines="5"
+        android:textColor="@color/text_color"/>
     <fragment
         android:id="@+id/fGoogleMap"
         android:layout_below="@id/tvAddress"
